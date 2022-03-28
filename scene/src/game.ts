@@ -14,7 +14,7 @@ const updateInterval = 5
 // types of data sent over websockets
 export enum dataType {
   POSITION,
-  KICK,
+  KICK
 }
 
 let userData
@@ -22,11 +22,11 @@ let userData
 // undefined socket object, to define later with realm
 let socket
 
-joinSocketsServer()
+joinSocketsServer().catch((error) => log(error))
 
 export async function joinSocketsServer() {
   // keep players in different realms in separate rooms for the ws server
-  let realm = await getCurrentRealm()
+  const realm = await getCurrentRealm()
   log(`You are in the realm: `, realm.displayName)
   // connect to websockets server
   socket = new WebSocket(
@@ -34,12 +34,12 @@ export async function joinSocketsServer() {
   )
 
   // for each ws message that arrives
-  socket.onmessage = function (event) {
+  socket.onmessage = async function (event) {
     try {
       const parsed = JSON.parse(event.data)
       log(parsed)
 
-      setBall(parsed)
+      await setBall(parsed)
     } catch (error) {
       log(error)
     }
@@ -52,8 +52,8 @@ export async function setBall(data: any) {
     userData = await getUserData()
   }
   // ignore messages from the same player
-  if (data.user == userData.displayName) return
-  if (data.type == dataType.POSITION) {
+  if (data.user === userData.displayName) return
+  if (data.type === dataType.POSITION) {
     balls[data.ball].getComponent(Transform).position.copyFrom(data.pos)
     balls[data.ball].getComponent(Transform).rotation.copyFrom(data.rot)
 
@@ -68,7 +68,7 @@ export async function setBall(data: any) {
       data.rot.z,
       data.rot.w
     )
-  } else if (data.type == dataType.KICK) {
+  } else if (data.type === dataType.KICK) {
     lastKicker = false
 
     ballBodies[data.ball].position = new CANNON.Vec3(
@@ -110,27 +110,27 @@ engine.addEntity(baseScene)
 const ballShapes: GLTFShape[] = [
   new GLTFShape('models/redBall.glb'),
   new GLTFShape('models/greenBall.glb'),
-  new GLTFShape('models/blueBall.glb'),
+  new GLTFShape('models/blueBall.glb')
   //   new GLTFShape('models/pinkBall.glb'),
   //   new GLTFShape('models/yellowBall.glb'),
 ]
 
 const balls: Ball[] = [] // Store balls
 const ballBodies: CANNON.Body[] = [] // Store ball bodies
-let ballHeight = 1 // Start height for the balls
+const ballHeight = 1 // Start height for the balls
 let forwardVector: Vector3 = Vector3.Forward().rotate(Camera.instance.rotation) // Camera's forward vector
-let vectorScale: number = 100
+const vectorScale: number = 100
 
 // Create balls in predefined positions
 for (let i = 0; i < ballShapes.length; i++) {
-  let positionX: number = 14 + i
-  let positionY: number = 1 + i * 3
-  let positionZ: number = 14 + i
+  const positionX: number = 14 + i
+  const positionY: number = 1 + i * 3
+  const positionZ: number = 14 + i
 
   const ball = new Ball(
     ballShapes[i],
     new Transform({
-      position: new Vector3(positionX, positionY, positionZ),
+      position: new Vector3(positionX, positionY, positionZ)
     })
   )
   balls.push(ball)
@@ -169,14 +169,14 @@ for (let i = 0; i < ballShapes.length; i++) {
             vectorScale: vectorScale,
             pos: ballBodies[i].position.clone(),
             rot: ballBodies[i].quaternion.clone(),
-            timeStamp: Date.now(),
+            timeStamp: Date.now()
           })
         )
       },
       {
         button: ActionButton.ANY,
         showFeedback: true,
-        hoverText: 'kick',
+        hoverText: 'kick'
       }
     )
   )
@@ -192,14 +192,14 @@ const groundPhysicsContactMaterial = new CANNON.ContactMaterial(
   groundPhysicsMaterial,
   {
     friction: 0.5,
-    restitution: 0.33,
+    restitution: 0.33
   }
 )
 world.addContactMaterial(groundPhysicsContactMaterial)
 
 // Create a ground plane and apply physics material
 const groundBody: CANNON.Body = new CANNON.Body({
-  mass: 0, // mass == 0 makes the body static
+  mass: 0 // mass === 0 makes the body static
 })
 groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2) // Reorient ground plane to be in the y-axis
 
@@ -214,14 +214,14 @@ const ballPhysicsContactMaterial = new CANNON.ContactMaterial(
   ballPhysicsMaterial,
   {
     friction: 0.4,
-    restitution: 0.75,
+    restitution: 0.75
   }
 )
 world.addContactMaterial(ballPhysicsContactMaterial)
 
 // Create bodies to represent each of the balls
 for (let i = 0; i < balls.length; i++) {
-  let ballTransform: Transform = balls[i].getComponent(Transform)
+  const ballTransform: Transform = balls[i].getComponent(Transform)
 
   const ballBody: CANNON.Body = new CANNON.Body({
     mass: 5, // kg
@@ -230,7 +230,7 @@ for (let i = 0; i < balls.length; i++) {
       ballTransform.position.y,
       ballTransform.position.z
     ), // m
-    shape: new CANNON.Sphere(1), // m (Create sphere shaped body with a radius of 1)
+    shape: new CANNON.Sphere(1) // m (Create sphere shaped body with a radius of 1)
   })
 
   ballBody.material = ballPhysicsMaterial // Add bouncy material to ball body
@@ -264,7 +264,7 @@ class updateSystem implements ISystem {
               user: userData.displayName,
               ball: i,
               pos: balls[i].getComponent(Transform).position.clone(),
-              rot: balls[i].getComponent(Transform).rotation.clone(),
+              rot: balls[i].getComponent(Transform).rotation.clone()
             })
           )
         }
